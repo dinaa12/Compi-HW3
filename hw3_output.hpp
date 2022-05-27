@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "semanticTypes.h"
 using namespace std;
 
 namespace output{
@@ -27,5 +28,11 @@ namespace output{
     void errorByteTooLarge(int lineno, const string& value);
 
 }
+
+#define YYSTYPE SemType*
+
+extern int yylineno;
+extern char* yytext;
+extern int yylex();
 
 #endif
