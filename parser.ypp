@@ -51,22 +51,22 @@ Funcs : FuncDecl Funcs                                                      { }
 ;
 
 FuncDecl :  RetType ID LPAREN Formals RPAREN
-            { addFuncToSymTable($2->type_value, $1->type_name, $4->list_type_name, yylineno); }
+            { addFuncToSymTable($2->getTypeValue(), $1->getTypeName(), $4->getListTypeName(), yylineno); }
             OpenScopeM
-            { addFuncArgsToSymTable($4->list_type_name, $4->list_names, yylineno); }
+            { addFuncArgsToSymTable($4->getListTypeName(), $4->getListNames(), yylineno); }
             LBRACE Statements RBRACE CloseScopeM {}
 ;
 
-RetType : Type                                                              { $$ = new STRetType($1->type_name); }
+RetType : Type                                                              { $$ = new STRetType($1->getTypeName()); }
           | VOID                                                            { $$ = new STRetType("VOID"); }
 ;
 Formals : FormalsList                                                       { $$ = $1; }
           | /*epsilon*/                                                     { $$ = new STFormalsList();}
 ;
-FormalsList : FormalDecl                                                    { $$ = new STFormalsList($1->type_name, $1->type_value);  }
-              | FormalDecl COMMA FormalsList                                { $$ = new STFormalsList($1->type_name, $3->list_type_name, $1->type_value, $3->list_names); }
+FormalsList : FormalDecl                                                    { $$ = new STFormalsList($1->getTypeName(), $1->getTypeValue());  }
+              | FormalDecl COMMA FormalsList                                { $$ = new STFormalsList($1->getTypeName(), $3->getListTypeName(), $1->getTypeValue(), $3->getListNames()); }
 ;
-FormalDecl : Type ID                                                        { $$ = new STFormalDecl($1->type_name, $2->type_value); }
+FormalDecl : Type ID                                                        { $$ = new STFormalDecl($1->getTypeName(), $2->getTypeValue()); }
 ;
 
 Statements : Statement                                                      { }
@@ -74,27 +74,30 @@ Statements : Statement                                                      { }
 ;
 
 Statement : OpenScopeM LBRACE Statements RBRACE CloseScopeM                 { }
-            | Type ID SC                                                    { addIDToSymTable($2->type_value, $1->type_name, yylineno); }
+            | Type ID SC                                                    { addIDToSymTable($2->getTypeValue(), $1->getTypeName(), yylineno); }
             | Type ID ASSIGN Exp SC                                         {
-                                                                                addIDToSymTable($2->type_value, $1->type_name, yylineno);
-                                                                                checkValidAssign($2->type_name, $4, yylineno);
+                                                                                addIDToSymTable($2->getTypeValue(), $1->getTypeName(), yylineno);
+                                                                                checkValidAssign($1->getTypeName(), $4, yylineno);
                                                                             }
             | AUTO ID ASSIGN Exp SC                                         {
-                                                                                SemTypeName exp_type = $4->type_name;
-                                                                                if (exp_type == "FUNC") exp_type = $4->ret_type_name;
-                                                                                addIDToSymTable($2->type_value, exp_type, yylineno);
-                                                                                checkValidAssign($2->type_name, $4, yylineno);
+                                                                                SemTypeName exp_type = $4->getTypeName();
+                                                                                if (exp_type == "FUNC") exp_type = $4->getRetTypeName();
+                                                                                addIDToSymTable($2->getTypeValue(), exp_type, yylineno);
+                                                                                //checkValidAssign($2->getTypeName(), $4, yylineno);
                                                                             }
-            | ID ASSIGN Exp SC                                              { checkValidAssign($1->type_name, $3, yylineno); }
+            | ID ASSIGN Exp SC                                              {
+                                                                                SemTypeName id_type = checkIDInSymTable($1->getTypeValue(), yylineno);
+                                                                                checkValidAssign($1->getTypeName(), $3, yylineno);
+                                                                            }
             | Call SC                                                       { }
             | RETURN SC                                                     { checkRetVal("VOID", yylineno); }
-            | RETURN Exp SC                                                 { checkRetVal($2->type_name, yylineno); }
+            | RETURN Exp SC                                                 { checkRetVal($2->getTypeName(), yylineno); }
             | IF LPAREN Exp RPAREN
-                { checkType($3->type_name, "BOOL", yylineno);
-                checkType($3->type_name, "BOOL", yylineno); }
+                { checkType($3->getTypeName(), "BOOL", yylineno);
+                checkType($3->getTypeName(), "BOOL", yylineno); }
                 OpenScopeM Statement CloseScopeM IFELSEM
             | WHILE LPAREN Exp RPAREN
-                { checkType($3->type_name, "BOOL", yylineno);
+                { checkType($3->getTypeName(), "BOOL", yylineno);
                 while_counter++; }
                 OpenScopeM Statement                                        {
                                                                                 while_counter--;
@@ -114,19 +117,19 @@ OpenScopeM : /*epsilon*/                                                    { op
 ;
 
 Call : ID LPAREN ExpList RPAREN                                             {
-                                                                                SemTypeName ret_type = checkFuncInSymTable($1->type_value, yylineno);
-                                                                                checkFuncArgsInTable($1->type_value, yylineno, $3->list_type_name);
+                                                                                SemTypeName ret_type = checkFuncInSymTable($1->getTypeValue(), yylineno);
+                                                                                checkFuncArgsInTable($1->getTypeValue(), yylineno, $3->getListTypeName());
                                                                                 $$ = new STCall(ret_type);
                                                                             }
        | ID LPAREN RPAREN                                                   {
-                                                                                SemTypeName ret_type = checkFuncInSymTable($1->type_value, yylineno);
-                                                                                checkFuncArgsInTable($1->type_value, yylineno, vector<SemTypeName>());
+                                                                                SemTypeName ret_type = checkFuncInSymTable($1->getTypeValue(), yylineno);
+                                                                                checkFuncArgsInTable($1->getTypeValue(), yylineno, vector<SemTypeName>());
                                                                                 $$ = new STCall(ret_type);
                                                                             }
 ;
 
-ExpList : Exp                                                               { $$ = new STExpList($1->type_name); }
-          | Exp COMMA ExpList                                               { $$ = new STExpList($1->type_name, $3->list_type_name); }
+ExpList : Exp                                                               { $$ = new STExpList($1->getTypeName()); }
+          | Exp COMMA ExpList                                               { $$ = new STExpList($1->getTypeName(), $3->getListTypeName()); }
 ;
 
 Type : INT                                                                  { $$ = new STType("INT"); }
@@ -134,63 +137,63 @@ Type : INT                                                                  { $$
        | BOOL                                                               { $$ = new STType("BOOL"); }
 ;
 
-Exp : LPAREN Exp RPAREN                                                     { $$ = new STExp($2->type_name); }
+Exp : LPAREN Exp RPAREN                                                     { $$ = new STExp($2->getTypeName()); }
       | Exp BINOP_ADD Exp                                                   {
-                                                                                checkTypeNumeric($1->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
-                                                                                $$ = new STExp(checkBINOPResType($1->type_name, $3->type_name));
+                                                                                checkTypeNumeric($1->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                $$ = new STExp(checkBINOPResType($1->getTypeName(), $3->getTypeName()));
                                                                             }
       | Exp BINOP_SUB Exp                                                   {
-                                                                                checkTypeNumeric($1->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
-                                                                                $$ = new STExp(checkBINOPResType($1->type_name, $3->type_name));
+                                                                                checkTypeNumeric($1->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                $$ = new STExp(checkBINOPResType($1->getTypeName(), $3->getTypeName()));
                                                                             }
       | Exp BINOP_MUL Exp                                                   {
-                                                                                checkTypeNumeric($1->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
-                                                                                $$ = new STExp(checkBINOPResType($1->type_name, $3->type_name));
+                                                                                checkTypeNumeric($1->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                $$ = new STExp(checkBINOPResType($1->getTypeName(), $3->getTypeName()));
                                                                             }
       | Exp BINOP_DIV Exp                                                   {
-                                                                                checkTypeNumeric($1->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
-                                                                                $$ = new STExp(checkBINOPResType($1->type_name, $3->type_name));
+                                                                                checkTypeNumeric($1->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                $$ = new STExp(checkBINOPResType($1->getTypeName(), $3->getTypeName()));
                                                                             }
       | ID                                                                  {
-                                                                                checkIDInSymTable($1->type_value, yylineno);
-                                                                                $$ = new STExp($1->type_name);
+                                                                                SemTypeName id_type = checkIDInSymTable($1->getTypeValue(), yylineno);
+                                                                                $$ = new STExp(id_type);
                                                                             }
-      | Call                                                                { $$ = new STExp("FUNC", $1->type_name); }
-      | NUM                                                                 { $$ = new STExp("INT", $1->type_value); }
+      | Call                                                                { $$ = new STExp("FUNC", $1->getTypeName()); }
+      | NUM                                                                 { $$ = new STExp("INT", $1->getTypeValue()); }
       | NUM B                                                               {
-                                                                                checkBValid($1->type_value, yylineno);
-                                                                                $$ = new STExp("BYTE", $1->type_value);
+                                                                                checkBValid($1->getTypeValue(), yylineno);
+                                                                                $$ = new STExp("BYTE", $1->getTypeValue());
                                                                             }
       | STRING                                                              { $$ = new STExp("STRING"); }
       | TRUE                                                                { $$ = new STExp("BOOL"); }
       | FALSE                                                               { $$ = new STExp("BOOL"); }
       | NOT Exp                                                             {
-                                                                                checkType($2->type_name, "BOOL", yylineno);
+                                                                                checkType($2->getTypeName(), "BOOL", yylineno);
                                                                                 $$ = new STExp("BOOL");
                                                                             }
       | Exp AND Exp                                                         {
-                                                                                checkType($1->type_name, "BOOL", yylineno);
-                                                                                checkType($3->type_name, "BOOL", yylineno);
+                                                                                checkType($1->getTypeName(), "BOOL", yylineno);
+                                                                                checkType($3->getTypeName(), "BOOL", yylineno);
                                                                                 $$ = new STExp("BOOL");
                                                                             }
       | Exp OR Exp                                                          {
-                                                                                checkType($1->type_name, "BOOL", yylineno);
-                                                                                checkType($3->type_name, "BOOL", yylineno);
+                                                                                checkType($1->getTypeName(), "BOOL", yylineno);
+                                                                                checkType($3->getTypeName(), "BOOL", yylineno);
                                                                                 $$ = new STExp("BOOL");
                                                                             }
       | Exp RELOP Exp                                                       {
-                                                                                checkTypeNumeric($1->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
+                                                                                checkTypeNumeric($1->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
                                                                                 $$ = new STExp("BOOL");
                                                                             }
       | LPAREN Type RPAREN Exp                                              {
-                                                                                checkTypeNumeric($2->type_name, yylineno);
-                                                                                checkTypeNumeric($3->type_name, yylineno);
-                                                                                $$ = new STExp($2->type_name);
+                                                                                checkTypeNumeric($2->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                $$ = new STExp($2->getTypeName());
                                                                             }
 ;
 

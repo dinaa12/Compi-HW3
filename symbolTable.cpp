@@ -11,11 +11,15 @@ void SymbolTable::printTable() {
         string current_entry_type = current_entry->type[0];
         int current_entry_offset = current_entry->offset;
         if (current_entry->is_func) {
-            vector<string> current_entry_args = vector<SemTypeName>(current_entry->type.begin() + 1, current_entry->type.begin() + (current_entry->type.size() - 2));
+            vector<string> current_entry_args(current_entry->type);
+            current_entry_args.erase(current_entry_args.begin());
+            current_entry_args.pop_back();
             string current_entry_ret_type = current_entry->type[current_entry->type.size()-1];
-            current_entry_type = output::makeFunctionType(current_entry_ret_type, current_entry_args);
+            output::printID(current_entry_name, current_entry_offset, output::makeFunctionType(current_entry_ret_type, current_entry_args));
         }
-        output::printID(current_entry_name, current_entry_offset, current_entry_type);
+        else {
+            output::printID(current_entry_name, current_entry_offset, current_entry_type);
+        }
     }
 }
 

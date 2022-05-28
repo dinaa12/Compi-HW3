@@ -24,7 +24,7 @@ void checkBValid(string val, int line);
 // check binop result type (int or byte) and return the type
 SemTypeName checkBINOPResType(SemTypeName t1, SemTypeName t2);
 
-void checkIDInSymTable(string sym_name, int line);
+SemTypeName checkIDInSymTable(string sym_name, int line);
 
 SemTypeName checkFuncInSymTable(string func_name, int line);
 

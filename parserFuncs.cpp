@@ -16,7 +16,7 @@ SymbolTableEntry* getEntryByName(string name) {
 
 void checkMainExist() {
     SymbolTableEntry* main_entry = getEntryByName("main");
-    if (!main_entry || !main_entry->is_func || main_entry->type.size() != 1 || main_entry->type[0] != "VOID") {
+    if (!main_entry || !main_entry->is_func || main_entry->type.size() != 2 || main_entry->type[1] != "VOID") {
         output::errorMainMissing();
         exit(0);
     }
@@ -30,8 +30,10 @@ void checkType(SemTypeName t1, SemTypeName t2, int line) {
 }
 
 void checkTypeNumeric(SemTypeName t, int line) {
-    checkType(t, "INT", line);
-    checkType(t, "BYTE", line);
+    if (t != "INT" && t != "BYTE") {
+        output::errorMismatch(line);
+        exit(0);
+    }
 }
 
 void checkBValid(string val, int line) {
@@ -48,12 +50,13 @@ SemTypeName checkBINOPResType(SemTypeName t1, SemTypeName t2) {
     return "INT";
 }
 
-void checkIDInSymTable(string sym_name, int line) {
+SemTypeName checkIDInSymTable(string sym_name, int line) {
     SymbolTableEntry* entry = getEntryByName(sym_name);
     if (!entry || entry->is_func) {
         output::errorUndef(line, sym_name);
         exit(0);
     }
+    return entry->type[0];
 }
 
 SemTypeName checkFuncInSymTable(string func_name, int line) {
@@ -67,7 +70,10 @@ SemTypeName checkFuncInSymTable(string func_name, int line) {
 
 void checkFuncArgsInTable(string func_name, int line, vector<SemTypeName> arg) {
     SymbolTableEntry* entry = getEntryByName(func_name);
-    vector<SemTypeName> entry_args = vector<SemTypeName>(entry->type.begin() + 1, entry->type.begin() + (entry->type.size() - 2));
+    vector<SemTypeName> entry_args(entry->type);
+    entry_args.erase(entry_args.begin());
+    entry_args.pop_back();
+
     if (arg.size() == 0) {
         if (entry_args.size() != 0) {
             output::errorPrototypeMismatch(line, func_name, entry_args);
@@ -139,9 +145,9 @@ void checkValidAssign(SemTypeName t1, SemType* t2, int line) {
         output::errorMismatch(line);
         exit(0);
     }
-    SemTypeName t_2 = t2->type_name;
-    if (t2->type_name == "FUNC")
-        t_2 = t2->ret_type_name;
+    SemTypeName t_2 = t2->getTypeName();
+    if (t2->getTypeName() == "FUNC")
+        t_2 = t2->getRetTypeName();
     if (!(t1 == t_2 || (t1 == "INT" && t_2 == "BYTE"))) {
         output::errorMismatch(line);
         exit(0);
@@ -177,7 +183,7 @@ void addFuncToSymTable(string func_name, SemTypeName ret_type, vector<SemTypeNam
 
 void _checkUniqueArgs(vector<string> args_names, int line) {
     for (int i = 0; i < args_names.size(); i++) {
-        for (int j = 0; j < args_names.size(); j++) {
+        for (int j = i+1; j < args_names.size(); j++) {
             if (args_names[i] == args_names[j]) {
                 output::errorDef(line, args_names[i]);
                 exit(0);
