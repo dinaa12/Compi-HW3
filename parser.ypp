@@ -87,7 +87,7 @@ Statement : OpenScopeM LBRACE Statements RBRACE CloseScopeM                 { }
                                                                             }
             | ID ASSIGN Exp SC                                              {
                                                                                 SemTypeName id_type = checkIDInSymTable($1->getTypeValue(), yylineno);
-                                                                                checkValidAssign($1->getTypeName(), $3, yylineno);
+                                                                                checkValidAssign(id_type, $3, yylineno);
                                                                             }
             | Call SC                                                       { }
             | RETURN SC                                                     { checkRetVal("VOID", yylineno); }
@@ -162,7 +162,7 @@ Exp : LPAREN Exp RPAREN                                                     { $$
                                                                                 SemTypeName id_type = checkIDInSymTable($1->getTypeValue(), yylineno);
                                                                                 $$ = new STExp(id_type);
                                                                             }
-      | Call                                                                { $$ = new STExp("FUNC", $1->getTypeName()); }
+      | Call                                                                { $$ = new STExp($1->getTypeName()); }
       | NUM                                                                 { $$ = new STExp("INT", $1->getTypeValue()); }
       | NUM B                                                               {
                                                                                 checkBValid($1->getTypeValue(), yylineno);
