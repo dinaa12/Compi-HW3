@@ -23,7 +23,6 @@ void checkMainExist() {
 }
 
 void checkType(SemTypeName t1, SemTypeName t2, int line) {
-    //cout << "t1= " << t1 << "t2= " << t2 << endl;
     if (t1 != t2) {
         output::errorMismatch(line);
         exit(0);
@@ -31,7 +30,6 @@ void checkType(SemTypeName t1, SemTypeName t2, int line) {
 }
 
 void checkTypeNumeric(SemTypeName t, int line) {
-    //cout << "t= " << t << endl;
     if (t != "INT" && t != "BYTE") {
         output::errorMismatch(line);
         exit(0);
@@ -42,6 +40,7 @@ void checkBValid(string val, int line) {
     int num_val = stoi(val);
     if (num_val < 0 || num_val > 255) {
         output::errorByteTooLarge(line, val);
+        exit(0);
     }
 }
 
@@ -135,15 +134,13 @@ void checkRetVal(SemTypeName t, int line) {
     SymbolTable* sym_table = tables_stack[tables_stack.size()-2];
     SymbolTableEntry* func_entry = sym_table->table.back();
     SemTypeName ret_val = func_entry->type.back();
-    //cout << "tt= " << t << endl;
-    if (ret_val != t) {
+    if (ret_val != t && !(ret_val == "INT" && t == "BYTE")) {
         output::errorMismatch(line);
         exit(0);
     }
 }
 
 void checkValidAssign(SemTypeName t1, SemType* t2, int line) {
-    //cout << "t1= " << t1 << endl;
     if (t1 == "FUNC") {
         output::errorMismatch(line);
         exit(0);
@@ -151,7 +148,6 @@ void checkValidAssign(SemTypeName t1, SemType* t2, int line) {
     SemTypeName t_2 = t2->getTypeName();
     if (t2->getTypeName() == "FUNC")
         t_2 = t2->getRetTypeName();
-    //cout << "t1= " << t1 << " t_2= " << t_2 << endl;
     if (!(t1 == t_2 || (t1 == "INT" && t_2 == "BYTE"))) {
         output::errorMismatch(line);
         exit(0);
