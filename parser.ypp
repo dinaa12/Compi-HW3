@@ -77,17 +77,18 @@ Statement : OpenScopeM LBRACE Statements RBRACE CloseScopeM                 { }
             | Type ID SC                                                    { addIDToSymTable($2->getTypeValue(), $1->getTypeName(), yylineno); }
             | Type ID ASSIGN Exp SC                                         {
                                                                                 addIDToSymTable($2->getTypeValue(), $1->getTypeName(), yylineno);
-                                                                                checkValidAssign($1->getTypeName(), $4, yylineno);
+                                                                                checkValidAssign($1->getTypeName(), $4->getTypeName(), yylineno);
                                                                             }
             | AUTO ID ASSIGN Exp SC                                         {
                                                                                 SemTypeName exp_type = $4->getTypeName();
-                                                                                if (exp_type == "FUNC") exp_type = $4->getRetTypeName();
+                                                                                //if (exp_type == "FUNC") exp_type = $4->getRetTypeName();
+                                                                                if (exp_type == "VOID" || exp_type == "STRING") { output::errorMismatch(yylineno); exit(0); }
                                                                                 addIDToSymTable($2->getTypeValue(), exp_type, yylineno);
-                                                                                //checkValidAssign($2->getTypeName(), $4, yylineno);
+                                                                                //checkValidAssign($2->getTypeName(), $4->getTypeName(), yylineno);
                                                                             }
             | ID ASSIGN Exp SC                                              {
                                                                                 SemTypeName id_type = checkIDInSymTable($1->getTypeValue(), yylineno);
-                                                                                checkValidAssign(id_type, $3, yylineno);
+                                                                                checkValidAssign(id_type, $3->getTypeName(), yylineno);
                                                                             }
             | Call SC                                                       { }
             | RETURN SC                                                     { checkRetVal("VOID", yylineno); }
@@ -192,7 +193,7 @@ Exp : LPAREN Exp RPAREN                                                     { $$
                                                                             }
       | LPAREN Type RPAREN Exp                                              {
                                                                                 checkTypeNumeric($2->getTypeName(), yylineno);
-                                                                                checkTypeNumeric($3->getTypeName(), yylineno);
+                                                                                checkTypeNumeric($4->getTypeName(), yylineno);
                                                                                 $$ = new STExp($2->getTypeName());
                                                                             }
 ;

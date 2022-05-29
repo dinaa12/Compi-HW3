@@ -131,7 +131,7 @@ void closeScope() {
 }
 
 void checkRetVal(SemTypeName t, int line) {
-    SymbolTable* sym_table = tables_stack[tables_stack.size()-2];
+    SymbolTable* sym_table = tables_stack.front();
     SymbolTableEntry* func_entry = sym_table->table.back();
     SemTypeName ret_val = func_entry->type.back();
     if (ret_val != t && !(ret_val == "INT" && t == "BYTE")) {
@@ -140,15 +140,12 @@ void checkRetVal(SemTypeName t, int line) {
     }
 }
 
-void checkValidAssign(SemTypeName t1, SemType* t2, int line) {
+void checkValidAssign(SemTypeName t1, SemTypeName t2, int line) {
     if (t1 == "FUNC") {
         output::errorMismatch(line);
         exit(0);
     }
-    SemTypeName t_2 = t2->getTypeName();
-    if (t2->getTypeName() == "FUNC")
-        t_2 = t2->getRetTypeName();
-    if (!(t1 == t_2 || (t1 == "INT" && t_2 == "BYTE"))) {
+    if (!(t1 == t2 || (t1 == "INT" && t2 == "BYTE"))) {
         output::errorMismatch(line);
         exit(0);
     }

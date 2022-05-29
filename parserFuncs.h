@@ -39,7 +39,7 @@ void closeScope();
 
 void checkRetVal(SemTypeName t, int line);
 
-void checkValidAssign(SemTypeName t1, SemType* t2, int line);
+void checkValidAssign(SemTypeName t1, SemTypeName t2, int line);
 
 void addIDToSymTable(string sym_name, SemTypeName t, int line);
 
